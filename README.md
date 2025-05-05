@@ -39,7 +39,7 @@ Instead of relying on fixed class names like `MsoNormal`, this extension scans t
 
 ## 📂 File Structure
 ```
-smart-content-extractor/
+html-content-extractor/
 ├── manifest.json
 ├── popup.html
 ├── popup.js
