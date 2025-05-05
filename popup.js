@@ -1,8 +1,12 @@
 document.getElementById("copyBtn").addEventListener("click", () => {
-    const content = document.getElementById("contentArea");
-    content.select();
-    document.execCommand("copy");
+  const content = document.getElementById("contentArea").value;
+  navigator.clipboard.writeText(content).then(() => {
+    alert("📋 Copied to clipboard!");
+  }).catch(err => {
+    console.error("Copy failed:", err);
   });
+});
+
   
   chrome.tabs.query({ active: true, currentWindow: true }, function (tabs) {
     chrome.scripting.executeScript({
@@ -15,37 +19,23 @@ document.getElementById("copyBtn").addEventListener("click", () => {
   });
   
   function extractSmartContent() {
-    const elements = Array.from(document.querySelectorAll("p, div, span"));
-    const classStats = {};
+    const candidates = Array.from(document.querySelectorAll("div"))
+      .map(div => {
+        const pList = div.querySelectorAll("p");
+        const textContent = Array.from(pList).map(p => p.innerText.trim()).join("\n\n");
+        return {
+          element: div,
+          pCount: pList.length,
+          text: textContent
+        };
+      })
+      .filter(c => c.pCount >= 3 && c.text.length > 100);
   
-    elements.forEach(el => {
-      const text = el.innerText?.trim();
-      const className = el.className;
-      if (text && text.length > 30 && className) {
-        const cls = className.trim().split(/\s+/)[0]; // dùng class đầu tiên
-        if (!classStats[cls]) {
-          classStats[cls] = { count: 0, elements: [] };
-        }
-        classStats[cls].count++;
-        classStats[cls].elements.push(el);
-      }
-    });
+    if (!candidates.length) return "Không tìm thấy nội dung phù hợp.";
   
-    // Tìm class có nhiều đoạn văn nhất
-    let bestClass = null;
-    let maxCount = 0;
-    for (const cls in classStats) {
-      if (classStats[cls].count > maxCount) {
-        maxCount = classStats[cls].count;
-        bestClass = cls;
-      }
-    }
-  
-    if (!bestClass || maxCount < 2) return "Không tìm thấy class phù hợp.";
-  
-    const finalElements = classStats[bestClass].elements;
-    const resultText = finalElements.map(e => e.innerText.trim()).join("\n\n");
-  
-    return resultText;
+    // Chọn div chứa nhiều đoạn văn nhất
+    candidates.sort((a, b) => b.pCount - a.pCount);
+    return candidates[0].text;
   }
+  
   
